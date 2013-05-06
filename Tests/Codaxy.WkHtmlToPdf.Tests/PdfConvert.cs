@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using System.IO;
 using System.Web;
+using System.Collections.Generic;
 
 namespace Codaxy.WkHtmlToPdf
 {
@@ -61,10 +62,15 @@ namespace Codaxy.WkHtmlToPdf
 
 		public static void ConvertHtmlToPdf(PdfDocument document, PdfOutput output)
 		{
-			ConvertHtmlToPdf(document, null, output);
+			ConvertHtmlToPdf(document, null, output, null);
 		}
 
-		public static void ConvertHtmlToPdf(PdfDocument document, PdfConvertEnvironment environment, PdfOutput woutput)
+        public static void ConvertHtmlToPdf(PdfDocument document, PdfOutput output, Dictionary<String, Object> parameters)
+        {
+            ConvertHtmlToPdf(document, null, output, parameters);
+        }
+
+        public static void ConvertHtmlToPdf(PdfDocument document, PdfConvertEnvironment environment, PdfOutput woutput, Dictionary<String, Object> parameters)
         {
             if (document.Url == "-" && document.Html == null)
                 throw new PdfConvertException(
@@ -92,7 +98,15 @@ namespace Codaxy.WkHtmlToPdf
             ProcessStartInfo si;
 
             StringBuilder paramsBuilder = new StringBuilder();
-            paramsBuilder.Append("--page-size A4 ");
+            parameters = parameters == null ? new Dictionary<String, Object>() : parameters;
+            foreach (KeyValuePair<String, Object> parameter in parameters)
+            {
+                paramsBuilder.Append(String.Format("{0} {1} ", parameter.Key, parameter.Value));
+            }
+            if (!parameters.ContainsKey("--page-size"))
+            {
+                paramsBuilder.Append("--page-size A4 ");
+            }
             //paramsBuilder.Append("--redirect-delay 0 "); not available in latest version
 			if (!string.IsNullOrEmpty(document.HeaderUrl))
             {
@@ -154,6 +168,7 @@ namespace Codaxy.WkHtmlToPdf
 							while ((read = fs.Read(buffer, 0, buffer.Length)) > 0)
 								woutput.OutputStream.Write(buffer, 0, read);
 						}
+                        woutput.OutputStream.Position = 0;
 					}
 
 					if (woutput.OutputCallback != null)
